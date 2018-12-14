@@ -22,17 +22,17 @@ class TradeAgent {
 			if (orders.CurrentOrders) {
 				for (var i = 0; i < orders.CurrentOrders.length; i++) {
 					const res = await this.quantaClient.cancelOrder(orders.CurrentOrders[i].Id)
-					console.log("cancelling", orders.CurrentOrders[i].Id, res.status);
 					await sleep(500);
+					console.log("cancelling", orders.CurrentOrders[i].Id, res.status);
 				}
 			}
 		}
 	}
 	async runOnce() {
-		await this.lastOrderId.forEach(async (orderId) => {
+		this.lastOrderId.forEach(async (orderId) => {
 			const result = await this.quantaClient.cancelOrder(orderId);
+			await sleep(1500);
 			console.log("cancel ", orderId, result.status);
-			await sleep(1000);
 		})
 
 		this.lastOrderId = [];
@@ -54,7 +54,7 @@ class TradeAgent {
 			console.log("order failed ", result.status);
 		}
 		// sell order
-		await sleep(1000);
+		await sleep(1500);
 		const result2 = await this.quantaClient.submitOrder(1, this.quantaMarket, ""+data.ask, "0.001");
 		if (result2.status == 200) {
 			const json = await result2.json()
@@ -69,7 +69,7 @@ class TradeAgent {
 		await self.cancelAll();
 		setInterval(async () => {
 			await self.runOnce();
-		}, 6000)
+		}, 8000)
 	}
 }
 
