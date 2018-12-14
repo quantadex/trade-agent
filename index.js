@@ -29,11 +29,11 @@ class TradeAgent {
 		}
 	}
 	async runOnce() {
-		this.lastOrderId.forEach(async (orderId) => {
-			const result = await this.quantaClient.cancelOrder(orderId);
+		for (var i = 0; i < this.lastOrderId.length; i++) {
+			const result = await this.quantaClient.cancelOrder(this.lastOrderId[i]);
 			await sleep(1500);
-			console.log("cancel ", orderId, result.status);
-		})
+			console.log("cancel ", this.lastOrderId[i], result.status);
+		}
 
 		this.lastOrderId = [];
 
