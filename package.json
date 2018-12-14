@@ -1,0 +1,25 @@
+{
+  "name": "@quantadex/trade_agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel  index.js -d dist/",
+    "start": "babel-node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@quantadex/quanta_js": "^1.0.5",
+    "gdax": "^0.8.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-async-to-generator": "^7.2.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "mocha": "^5.2.0"
+  }
+}
