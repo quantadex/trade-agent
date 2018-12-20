@@ -6,7 +6,7 @@ function sleep(ms) {
 }
 
 class TradeAgent {
-	constructor(key, spread) {
+	constructor(key, spread, levels) {
 		this.quantaClient = new QC({ orderbookUrl: QC.OrderBookUrlDefault, secretKey: key })
 		this.gdaxClient = new Gdax.PublicClient();
 		this.lastOrderId = [];
@@ -73,4 +73,4 @@ class TradeAgent {
 	}
 }
 
-new TradeAgent("ZBYUCOMTT7UPXG6JSKIQREYF6FLMUFAE42I24VJNX6NOFP7I6BUQWEKV", 0.05).run()
+new TradeAgent("ZBYUCOMTT7UPXG6JSKIQREYF6FLMUFAE42I24VJNX6NOFP7I6BUQWEKV", 0.05, 5).run()
