@@ -6,5 +6,6 @@ WORKDIR /app
 COPY package.json /app
 COPY .babelrc /app
 COPY index.js /app
+ADD src /app/src
 RUN npm install
 CMD ["npm", "start"]

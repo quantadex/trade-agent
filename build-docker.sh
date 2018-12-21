@@ -20,10 +20,10 @@ else
     VER="${1}"
 fi
 
-if [[ $(git diff --stat) != '' ]]; then
-    echo "The current git directory is dirty. Please stash, commit or remove your changes. (Hint: git diff --stat)"
-    exit 1
-fi
+# if [[ $(git diff --stat) != '' ]]; then
+#     echo "The current git directory is dirty. Please stash, commit or remove your changes. (Hint: git diff --stat)"
+#     exit 1
+# fi
 
 VER=${VER}-$(git rev-parse --short HEAD)
 
