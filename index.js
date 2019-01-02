@@ -1,71 +1,118 @@
-import QC from "@quantadex/quanta_js";
+import Client, {default_ws} from "./src/graphene";
 import Gdax from 'gdax';
+
+const userId = "1.2.22";
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-class TradeAgent {
-	constructor(key, spread) {
-		this.quantaClient = new QC({ orderbookUrl: QC.OrderBookUrlDefault, secretKey: key })
+class GdaxPrice {
+	constructor(market, spread) {
 		this.gdaxClient = new Gdax.PublicClient();
-		this.lastOrderId = [];
-		this.quantaMarket = "ETH*QB3WOAL55IVT6E7BVUNRW6TUVCAOPH5RJYPUUL643YMKMJSZFZGWDJU3/USD*QB3WOAL55IVT6E7BVUNRW6TUVCAOPH5RJYPUUL643YMKMJSZFZGWDJU3";
-		this.spread = 0.01;
+		this.spread = spread;
+		this.market = market;
+	}
+
+	async update() {
+		this.data = await this.gdaxClient.getProductTicker(this.market)
+		console.log("GDAX:", this.data.price, this.data.time);
+		const spread = (this.spread * parseFloat(this.data.price));
+		const bid = (parseFloat(this.data.price) - (spread / 2)).toFixed(2);
+		const ask = (parseFloat(this.data.price) + (spread / 2)).toFixed(2);
+		this.bid = bid;
+		this.ask = ask;
+	}
+
+	getBid() {
+		return this.bid;
+	}
+
+	getAsk() {
+		return this.ask;
+	}
+
+	getAmount() {
+		return 0.05
+	}
+}
+
+class ConstantPrice {
+	constructor(price) {
+		this.price = price;
+	}
+	async update() {
+
+	}
+
+	// buy
+	getBid() {
+		return this.price - 0.01;
+	}
+	
+	getAsk() {
+		return this.price;
+	}
+
+	getAmount() {
+		return 1000000
+	}
+}
+
+class TradeAgent {
+	constructor(key, spread, levels) {
+		this.quantaClient = new Client(default_ws, key, userId, null);
+		this.lastOrders= {};
+		this.quantaMarket = [
+													{ ticker: "QDEX/USD", 
+														price: new ConstantPrice(0.30), clear: false, placed: false },
+													{ ticker: "ETH/USD", 
+														price: new GdaxPrice("ETH-USD", spread), clear: true, placed: false }
+													];		
 	}
 
 	async cancelAll() {
-		const res = await this.quantaClient.openOrders()
-		if (res.status == 200) {
-			const orders = await res.json()
-			console.log(orders.CurrentOrders);
-			if (orders.CurrentOrders) {
-				for (var i = 0; i < orders.CurrentOrders.length; i++) {
-					const res = await this.quantaClient.cancelOrder(orders.CurrentOrders[i].Id)
-					await sleep(500);
-					console.log("cancelling", orders.CurrentOrders[i].Id, res.status);
-				}
+		const orders = await this.quantaClient.openOrders("USD")
+		for (const o of orders) {
+			console.log("cancel order ", o.id);
+			await this.quantaClient.cancelOrder(o.id)
+		}
+	}
+
+	async runMarket(market) {
+		if (market.clear) {
+			const orders = this.lastOrders[market.ticker] || []
+			for (const o of orders) {
+				const result = await this.quantaClient.cancelOrder(o.id);
+				console.log("cancel ",o, result.status);
 			}
 		}
+		const parts = market.ticker.split("/")
+
+		if (!market.clear) {
+			if (!market.placed) {
+				market.placed = true;
+				await this.quantaClient.sendLimitOrder(true, parts[0], parts[1], market.price.getBid(), market.price.getAmount());
+				await this.quantaClient.sendLimitOrder(false, parts[0], parts[1], market.price.getAsk(), market.price.getAmount());
+			}
+		} else {
+			market.price.update()
+			await this.cancelAll()
+			await this.quantaClient.sendLimitOrder(true, parts[0], parts[1], market.price.getBid(), market.price.getAmount());
+			await this.quantaClient.sendLimitOrder(false, parts[0], parts[1], market.price.getAsk(), market.price.getAmount());
+		}
 	}
+
 	async runOnce() {
-		for (var i = 0; i < this.lastOrderId.length; i++) {
-			const result = await this.quantaClient.cancelOrder(this.lastOrderId[i]);
-			await sleep(1500);
-			console.log("cancel ", this.lastOrderId[i], result.status);
-		}
-
-		this.lastOrderId = [];
-
-		const data = await this.gdaxClient.getProductTicker('ETH-USD')
-		console.log("GDAX:", data.price, data.time, data.size, data.bid, data.ask, data.volume);
-		const spread = (this.spread * parseFloat(data.price));
-		const bid = (parseFloat(data.price) - (spread/2)).toFixed(2);
-		const ask = (parseFloat(data.price) + (spread/2)).toFixed(2);
-		console.log("submitting ", +bid, +ask);
-
-		// buy order
-		const result = await this.quantaClient.submitOrder(0, this.quantaMarket, ""+data.bid, "0.001");
-		if (result.status == 200) {
-			const json = await result.json()
-			console.log("order ", json.Id);
-			this.lastOrderId.push(json.Id);
-		} else {
-			console.log("order failed ", result.status);
-		}
-		// sell order
-		await sleep(1500);
-		const result2 = await this.quantaClient.submitOrder(1, this.quantaMarket, ""+data.ask, "0.001");
-		if (result2.status == 200) {
-			const json = await result2.json()
-			console.log("order ", json.Id);
-			this.lastOrderId.push(json.Id);
-		} else {
-			console.log("order failed ", result2.status);
+		for (const m of this.quantaMarket) {
+			console.log("running for market ", m.ticker);
+			await this.runMarket(m)
 		}
 	}
+
 	async run() {
 		const self = this;
+		await sleep(1000);
 		await self.cancelAll();
 		setInterval(async () => {
 			await self.runOnce();
@@ -73,4 +120,4 @@ class TradeAgent {
 	}
 }
 
-new TradeAgent("ZBYUCOMTT7UPXG6JSKIQREYF6FLMUFAE42I24VJNX6NOFP7I6BUQWEKV", 0.05).run()
+new TradeAgent(process.env.KEY, 0.05, 5).run()
