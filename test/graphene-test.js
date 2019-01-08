@@ -6,8 +6,9 @@ describe('graphene client', function () {
 		const client = new Client(default_ws, async  function() {
 			const user = await client.setupUser(process.env.KEY);
 
-			await client.transfer(user, "1.2.17", "QDEX", "1234", "test memo")
-
+			const result = await client.transfer(user, "1.2.17", "QDEX", "1234", "test memo")
+			console.log(JSON.stringify(result));
+			
 	// 		client.sendLimitOrder(user, true, "QDEX", "ETH", 0.50, 0.05);
 	// 		const orders = await client.openOrders(user, "ETH")
 	// 		//console.log(orders);

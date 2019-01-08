@@ -160,7 +160,7 @@ class QuantaClient {
 			from: user.publicKey,
 			to: user.publicKey,
 			nonce,
-			message: memo
+			message: [...Buffer.from(memo)]
 		}
 		
 		tr.add_type_operation("transfer", {
