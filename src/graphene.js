@@ -150,6 +150,34 @@ class QuantaClient {
 			});
 	}
 
+	async transfer(user, toUserId, asset, amount, memo) {
+		const fee_asset_id = "1.3.0";
+		const tr = new TransactionBuilder();
+		let nonce = TransactionHelper.unique_nonce_uint64();
+		const assetFound = this.assetsBySymbol[asset]
+
+		let memo_object = {
+			from: user.publicKey,
+			to: user.publicKey,
+			nonce,
+			message: memo
+		}
+		
+		tr.add_type_operation("transfer", {
+			fee: {
+				amount: 0,
+				asset_id: fee_asset_id
+			},
+			from: user.userId,
+			to: toUserId,
+			amount: { amount: amount, asset_id: assetFound.id },
+			memo: memo_object
+		})
+
+		const res = await signAndBroadcast(tr, user)
+		return res;		
+	}
+
 	async cancelOrder(user, orders) {
 		if (orders.length == 0) {
 			return
