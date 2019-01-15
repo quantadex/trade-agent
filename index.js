@@ -73,7 +73,7 @@ class TradeAgent {
 														price: new ConstantPrice(0.30), clear: false, placed: false },
 													{ ticker: "ETH/USD", 
 														price: new GdaxPrice("ETH-USD"), 
-														clear: true, placed: false, step: 100,
+														clear: true, placed: false, step: 10,
 														position: new BidAskPosition(5, spread), counter: 0 }
 													];		
 	}
